@@ -154,12 +154,12 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
     if (this.isOutputCustomized) {
       // User has set a custom filename
       displayOutput = this.options.output;
-      if (!displayOutput.endsWith(".txt")) {
-        displayOutput += ".txt";
+      if (!displayOutput.endsWith(".codedump.txt")) {
+        displayOutput += ".codedump.txt";
       }
     } else {
       // Auto-generate the filename based on directory
-      displayOutput = `${this.getAutoFilename()}.txt (auto)`;
+      displayOutput = `${this.getAutoFilename()}.codedump.txt (auto)`;
     }
 
     // Check if a config file exists
@@ -565,9 +565,9 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         outputFile = this.getAutoFilename();
       }
 
-      // Add .txt extension if not already present
-      if (!outputFile.endsWith(".txt")) {
-        outputFile += ".txt";
+      // Add .codedump.txt extension if not already present
+      if (!outputFile.endsWith(".codedump.txt")) {
+        outputFile += ".codedump.txt";
       }
 
       let largestFiles: [number, string][] = [];

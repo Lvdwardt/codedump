@@ -3,10 +3,10 @@
  * 
  * This file controls the behavior of the CodeDump tool.
  * You can customize which files and directories to include or exclude.
- * Generated on: 2025-04-17T14:12:04.945Z
+ * Generated on: 2025-04-17T14:13:56.500Z
  */
 
-const config = {
+const config: CodeDumpConfig = {
     directory: "",
     output: "",
     type: "list",

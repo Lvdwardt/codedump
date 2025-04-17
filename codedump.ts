@@ -1145,7 +1145,7 @@ export async function createConfigFile(
  * Generated on: ${new Date().toISOString()}
  */
 
-const config = ${
+const config: CodeDumpConfig = ${
       JSON.stringify(customConfig, null, 2)
         .replace(/"([^"]+)":/g, "$1:") // Convert "key": to key:
         .replace(/\n/g, "\n  ") // Add indentation for readability
