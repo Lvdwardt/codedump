@@ -37,7 +37,23 @@
 import * as fs from "fs";
 import { promises as fsPromises } from "fs";
 import * as path from "path";
-import { CodeDumpConfig } from "./types";
+
+// Define the CodeDumpConfig interface here for internal use
+interface CodeDumpConfig {
+  // Main settings
+  directory?: string; // Directory to dump, empty = current directory
+  output?: string; // Output filename, empty = auto (directory name)
+  type?: "list" | "normal" | "verbose" | "minify"; // Output format
+  showLargestFiles?: boolean; // Show largest files at beginning of dump
+
+  // File and directory filtering
+  allowedExtensions?: string[]; // File extensions to include (with dot)
+  allowedFilenames?: string[]; // Specific filenames to include
+  skipDirectories?: string[]; // Directory names to skip
+  skipDirectoryPatterns?: string[]; // Regex patterns for directories to skip
+  skipFilenames?: string[]; // Specific filenames to skip
+  skipPatterns?: string[]; // Regex patterns for files to skip
+}
 
 // Add configuration support
 let config: CodeDumpConfig | null = null;
@@ -1129,15 +1145,32 @@ export async function createConfigFile(
  * Generated on: ${new Date().toISOString()}
  */
 
-import { CodeDumpConfig } from "./types";
-
-const config: CodeDumpConfig = ${
+const config = ${
       JSON.stringify(customConfig, null, 2)
         .replace(/"([^"]+)":/g, "$1:") // Convert "key": to key:
         .replace(/\n/g, "\n  ") // Add indentation for readability
     };
 
 export default config;
+
+/**
+ * Type definitions for CodeDump configuration
+ */
+export interface CodeDumpConfig {
+  // Main settings
+  directory?: string; // Directory to dump, empty = current directory
+  output?: string; // Output filename, empty = auto (directory name)
+  type?: "list" | "normal" | "verbose" | "minify"; // Output format
+  showLargestFiles?: boolean; // Show largest files at beginning of dump
+
+  // File and directory filtering
+  allowedExtensions?: string[]; // File extensions to include (with dot)
+  allowedFilenames?: string[]; // Specific filenames to include
+  skipDirectories?: string[]; // Directory names to skip
+  skipDirectoryPatterns?: string[]; // Regex patterns for directories to skip
+  skipFilenames?: string[]; // Specific filenames to skip
+  skipPatterns?: string[]; // Regex patterns for files to skip
+}
 `;
 
     await fsPromises.writeFile(configPath, configContent, "utf-8");
