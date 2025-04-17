@@ -1,0 +1,44 @@
+{
+  "name": "codedump",
+  "version": "1.0.0",
+  "description": "A tool to dump your codebase contents into a file",
+  "main": "dist/codedump.js",
+  "bin": {
+    "codedump": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node cli.ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "code",
+    "dump",
+    "export",
+    "codebase",
+    "share",
+    "documentation"
+  ],
+  "author": "Lvdwardt",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lvdwardt/codedump.git"
+  }
+}
