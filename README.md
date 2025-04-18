@@ -6,10 +6,10 @@ A tool to dump your codebase contents into a single file for easy sharing, analy
 
 ```bash
 # Install globally
-npm install -g codedump
+npm install -g codedump.ts
 
 # Or run directly with npx
-npx codedump
+npx codedump.ts
 ```
 
 ## Usage
