@@ -19,7 +19,7 @@ npx codedump.ts
 The easiest way to use CodeDump is through its interactive CLI:
 
 ```bash
-codedump
+codedump.ts
 ```
 
 This will start an interactive menu where you can:
@@ -33,13 +33,13 @@ This will start an interactive menu where you can:
 
 ```bash
 # Basic usage
-codedump <directory>
+codedump.ts <directory>
 
 # Specify output file
-codedump <directory> -o output.txt
+codedump.ts <directory> -o output.txt
 
 # Use a specific output format
-codedump <directory> --type=verbose
+codedump.ts <directory> --type=verbose
 ```
 
 ### Output Formats
