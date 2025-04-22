@@ -566,8 +566,9 @@ class GitignoreManager {
 // Initialize the GitignoreManager
 const gitignoreManager = new GitignoreManager();
 
-function getFileInfo(filePath: string): FileInfo {
-  const stats = fs.statSync(filePath);
+// Make getFileInfo async as it performs file I/O
+async function getFileInfo(filePath: string): Promise<FileInfo> {
+  const stats = await fsPromises.stat(filePath); // Use async stat
   const fileInfo: FileInfo = {
     size: stats.size,
     lastModified: new Date(stats.mtime)
@@ -586,7 +587,7 @@ function getFileInfo(filePath: string): FileInfo {
   // Add line count if file is not binary and not too large
   if (stats.size < 1024 * 1024 && !isBinaryExtension(extension)) {
     try {
-      const content = fs.readFileSync(filePath, "utf-8");
+      const content = await fsPromises.readFile(filePath, "utf-8"); // Use async readFile
       fileInfo.lineCount = content.split("\n").length;
 
       // Extract imports for certain file types
@@ -786,19 +787,19 @@ function shouldSkip(pathname: string): boolean {
   );
 }
 
-function concatenateFiles(
+async function concatenateFiles(
   directory: string = ".",
   type: "list" | "normal" | "verbose" | "minify" = "normal"
-): string {
+): Promise<string> {
   const output: string[] = [];
   const processedPaths = new Set<string>(); // Track processed files to avoid duplicates
 
-  function walkDir(dir: string) {
+  async function walkDir(dir: string): Promise<void> {
     try {
       // Load gitignore file at this directory level
-      gitignoreManager.loadGitignoreFile(dir);
+      await gitignoreManager.loadGitignoreFile(dir);
 
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      const entries = await fsPromises.readdir(dir, { withFileTypes: true });
 
       // Sort entries to make directories come first, then files alphabetically
       const sortedEntries = entries.sort((a, b) => {
@@ -817,10 +818,10 @@ function concatenateFiles(
 
         if (entry.isDirectory()) {
           if (!shouldSkip(fullPath)) {
-            walkDir(fullPath);
+            await walkDir(fullPath);
           }
         } else if (entry.isFile() && !shouldSkip(fullPath)) {
-          const fileInfo = getFileInfo(fullPath);
+          const fileInfo = await getFileInfo(fullPath);
 
           if (type === "list") {
             output.push(`${fullPath}`);
@@ -834,7 +835,7 @@ function concatenateFiles(
               if (fileInfo.size > 1024 * 1024) {
                 output.push(`[File content truncated - file exceeds 1MB]`);
               } else {
-                const content = fs.readFileSync(fullPath, "utf-8");
+                const content = await fsPromises.readFile(fullPath, "utf-8");
                 // Remove excessive whitespace
                 const minified = content
                   .replace(/\n\s*\n\s*\n/g, "\n\n") // Remove extra blank lines
@@ -872,7 +873,7 @@ function concatenateFiles(
                 // 1MB threshold
                 output.push(`[File content truncated - file exceeds 1MB]`);
               } else {
-                const content = fs.readFileSync(fullPath, "utf-8");
+                const content = await fsPromises.readFile(fullPath, "utf-8");
                 output.push(content);
               }
             } catch (e) {
@@ -894,23 +895,26 @@ function concatenateFiles(
     }
   }
 
-  walkDir(directory);
+  await walkDir(directory);
   return output.join(type === "minify" ? "" : "\n");
 }
 
-function getLargestFiles(
+// Make getLargestFiles async
+async function getLargestFiles(
   directory: string = ".",
   topN: number = 10
-): [number, string][] {
+): Promise<[number, string][]> {
+  // Return a Promise
   const fileSizes: [number, string][] = [];
   const processedPaths = new Set<string>(); // Track processed files to avoid duplicates
 
-  function walkDir(dir: string) {
+  async function walkDir(dir: string): Promise<void> {
+    // Make inner walkDir async
     try {
       // Load gitignore file at this directory level
-      gitignoreManager.loadGitignoreFile(dir);
+      await gitignoreManager.loadGitignoreFile(dir); // Await async call
 
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      const entries = await fsPromises.readdir(dir, { withFileTypes: true }); // Use async readdir
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
@@ -922,12 +926,13 @@ function getLargestFiles(
 
         if (entry.isDirectory()) {
           if (!shouldSkip(fullPath)) {
-            walkDir(fullPath);
+            // shouldSkip remains sync for now, relies on manager state
+            await walkDir(fullPath); // Await recursive call
           }
         } else if (entry.isFile() && !shouldSkip(fullPath)) {
           try {
-            const size = fs.statSync(fullPath).size;
-            fileSizes.push([size, fullPath]);
+            const stats = await fsPromises.stat(fullPath); // Use async stat
+            fileSizes.push([stats.size, fullPath]);
           } catch (e) {
             // Skip files we can't access
           }
@@ -938,7 +943,7 @@ function getLargestFiles(
     }
   }
 
-  walkDir(directory);
+  await walkDir(directory); // Await the initial call
 
   // Use heap or more efficient algorithm for large file lists
   return fileSizes.sort((a, b) => b[0] - a[0]).slice(0, topN);
@@ -1009,10 +1014,10 @@ async function main(): Promise<void> {
     outputFilePath = path.resolve(args.output);
 
     // Get and display largest files
-    const largestFiles = getLargestFiles(args.directory, args.topN);
+    const largestFiles = await getLargestFiles(args.directory, args.topN);
 
     // Get main content
-    const result = concatenateFiles(args.directory, args.type);
+    const result = await concatenateFiles(args.directory, args.type);
 
     // Write only the main content to file without largest files summary
     await fsPromises.writeFile(args.output, result, "utf-8");

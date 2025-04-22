@@ -1,6 +1,6 @@
 {
   "name": "codedump.ts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A tool to dump your codebase contents into a file",
   "main": "dist/codedump.js",
   "bin": {

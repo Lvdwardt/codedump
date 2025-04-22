@@ -17,7 +17,6 @@ interface CodeDumpConfig {
   directory?: string; // Directory to dump, empty = current directory
   output?: string; // Output filename, empty = auto (directory name)
   type?: "list" | "normal" | "verbose" | "minify"; // Output format
-  showLargestFiles?: boolean; // Show largest files at beginning of dump
 
   // File and directory filtering
   allowedExtensions?: string[]; // File extensions to include (with dot)
@@ -32,7 +31,6 @@ interface CliOptions {
   directory: string;
   output: string;
   type: "list" | "normal" | "verbose" | "minify";
-  showLargestFiles: boolean;
 }
 
 // Function to load configuration file
@@ -70,7 +68,6 @@ class TerminalInterface {
     directory: ".",
     output: "",
     type: "normal",
-    showLargestFiles: true,
   };
 
   private menuIndex = 0;
@@ -84,7 +81,6 @@ class TerminalInterface {
   private settingsMenuItems = [
     "Output filename",
     "Output format",
-    "Show largest files",
     "Create config file",
     "Back",
     "Start dump",
@@ -171,9 +167,6 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
     console.log(`  Output filename: ${displayOutput}`);
     console.log(`  Output format: ${this.options.type}`);
     console.log(
-      `  Show largest files: ${this.options.showLargestFiles ? "Yes" : "No"}`
-    );
-    console.log(
       `  Configuration file: ${
         configExists ? this.GREEN + "Loaded" + this.RESET : "Not found"
       }\n`
@@ -225,20 +218,17 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         case 1: // Output format
           await this.promptForOutputType();
           break;
-        case 2: // Show largest files
-          await this.promptForShowLargestFiles();
-          break;
-        case 3: // Create config file
+        case 2: // Create config file
           await this.createConfigFile();
           break;
-        case 4: // Back
+        case 3: // Back
           this.inSettingsMenu = false;
           this.menuIndex = 0;
           break;
-        case 5: // Start dump (from settings)
+        case 4: // Start dump (from settings)
           await this.startDump();
           break;
-        case 6: // Exit (from settings)
+        case 5: // Exit (from settings)
           this.exit();
           break;
       }
@@ -414,62 +404,6 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
     });
   }
 
-  private async promptForShowLargestFiles(): Promise<void> {
-    this.clearScreen();
-    this.printTitle();
-
-    // Create options for Yes/No
-    const options = ["Yes", "No"];
-    let selectedIndex = this.options.showLargestFiles ? 0 : 1;
-
-    const renderOptions = () => {
-      console.clear();
-      this.printTitle();
-      console.log(`${this.YELLOW}Show largest files in dump:${this.RESET}`);
-      console.log(
-        `Displays the 5 largest files at the beginning of the dump file.\n`
-      );
-
-      options.forEach((option, index) => {
-        if (index === selectedIndex) {
-          console.log(`  ${this.GREEN}▶ ${option}${this.RESET}`);
-        } else {
-          console.log(`    ${option}`);
-        }
-      });
-
-      console.log(
-        `\n${this.YELLOW}Use arrow keys to navigate, Enter to select${this.RESET}`
-      );
-    };
-
-    renderOptions();
-
-    // Wait for selection
-    await new Promise<void>((resolve) => {
-      const handleKeypress = (str: string, key: readline.Key) => {
-        if (key.name === "up" && selectedIndex > 0) {
-          selectedIndex--;
-          renderOptions();
-        } else if (key.name === "down" && selectedIndex < options.length - 1) {
-          selectedIndex++;
-          renderOptions();
-        } else if (key.name === "return") {
-          this.options.showLargestFiles = selectedIndex === 0;
-          process.stdin.removeListener("keypress", handleKeypress);
-          resolve();
-        }
-      };
-
-      // Temporarily remove global keypress handler
-      process.stdin.removeListener("keypress", this.globalKeypressHandler);
-      process.stdin.on("keypress", handleKeypress);
-    });
-
-    // Restore global keypress handler
-    process.stdin.on("keypress", this.globalKeypressHandler);
-  }
-
   private async createConfigFile(): Promise<void> {
     this.clearScreen();
     this.printTitle();
@@ -523,7 +457,7 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         this.options.directory,
         this.options.output,
         this.options.type,
-        this.options.showLargestFiles
+        true // Always set showLargestFiles to true
       );
 
       if (success) {
@@ -570,39 +504,32 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         outputFile += ".codedump.txt";
       }
 
-      let largestFiles: [number, string][] = [];
+      // Always get largest files
+      console.log(`${this.YELLOW}Getting largest files...${this.RESET}`);
 
-      if (this.options.showLargestFiles) {
-        console.log(`${this.YELLOW}Getting largest files...${this.RESET}`);
-
-        // Get largest files
-        largestFiles = getLargestFiles(
-          this.options.directory,
-          5 // Always show 5 files
-        );
-      }
+      // Get largest files
+      const largestFiles = await getLargestFiles(
+        this.options.directory,
+        5 // Always show 5 files
+      );
 
       console.log(`\n${this.YELLOW}Generating dump file...${this.RESET}`);
 
       // Get main content
-      const result = concatenateFiles(
+      const result = await concatenateFiles(
         this.options.directory,
         this.options.type
       );
 
-      // Write only the main content to file
-      await fs.writeFile(outputFile, result, "utf-8");
+      // Always display largest files
+      console.log(`\n${this.YELLOW}Largest files in directory:${this.RESET}`);
+      console.log("=".repeat(80));
 
-      if (this.options.showLargestFiles) {
-        console.log(`\n${this.YELLOW}Largest files in directory:${this.RESET}`);
-        console.log("=".repeat(80));
-
-        for (const [size, filePath] of largestFiles) {
-          console.log(`${formatSize(size).padEnd(10)} ${filePath}`);
-        }
-
-        console.log("=".repeat(80));
+      for (const [size, filePath] of largestFiles) {
+        console.log(`${formatSize(size).padEnd(10)} ${filePath}`);
       }
+
+      console.log("=".repeat(80));
 
       await this.showMessage(
         `${this.GREEN}Success: Output has been written to '${outputFile}'${this.RESET}`
@@ -724,10 +651,6 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
 
     if (config.type) {
       this.options.type = config.type;
-    }
-
-    if (config.showLargestFiles !== undefined) {
-      this.options.showLargestFiles = config.showLargestFiles;
     }
   }
 }
