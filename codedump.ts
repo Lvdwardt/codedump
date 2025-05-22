@@ -1007,11 +1007,14 @@ async function main(): Promise<void> {
       if (dirName === ".") {
         dirName = path.basename(process.cwd());
       }
-      args.output = `${dirName}.txt`;
+      // Add .txt extension if not already present
+      args.output = dirName.endsWith(".txt") ? dirName : `${dirName}.txt`;
     }
 
-    // Store output file path
-    outputFilePath = path.resolve(args.output);
+    // Store output file path - ensure it's an absolute path in the current working directory
+    outputFilePath = path.isAbsolute(args.output)
+      ? path.resolve(args.output)
+      : path.join(process.cwd(), args.output);
 
     // Get and display largest files
     const largestFiles = await getLargestFiles(args.directory, args.topN);
@@ -1019,8 +1022,8 @@ async function main(): Promise<void> {
     // Get main content
     const result = await concatenateFiles(args.directory, args.type);
 
-    // Write only the main content to file without largest files summary
-    await fsPromises.writeFile(args.output, result, "utf-8");
+    // Write only the main content to file without largest files summary - use the absolute path
+    await fsPromises.writeFile(outputFilePath, result, "utf-8");
 
     // Display largest files only in console if enabled
     if (args.showLargestFiles) {
@@ -1034,7 +1037,7 @@ async function main(): Promise<void> {
       console.log("=".repeat(80));
     }
     console.log(
-      `\nOutput for directory '${args.directory}' has been written to '${args.output}'`
+      `\nOutput for directory '${args.directory}' has been written to '${outputFilePath}'`
     );
   } catch (error) {
     console.error(

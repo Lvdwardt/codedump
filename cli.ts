@@ -499,10 +499,24 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         outputFile = this.getAutoFilename();
       }
 
-      // Add .codedump.txt extension if not already present
-      if (!outputFile.endsWith(".codedump.txt")) {
+      // Add .codedump.txt extension if not already present and doesn't end with .txt
+      if (
+        !outputFile.endsWith(".txt") &&
+        !outputFile.endsWith(".codedump.txt")
+      ) {
         outputFile += ".codedump.txt";
+      } else if (
+        outputFile.endsWith(".txt") &&
+        !outputFile.endsWith(".codedump.txt")
+      ) {
+        // If it's a normal .txt file, don't add .codedump.txt
+        outputFile = outputFile;
       }
+
+      // Ensure output file is an absolute path in the current working directory
+      const absoluteOutputPath = path.isAbsolute(outputFile)
+        ? path.resolve(outputFile)
+        : path.join(process.cwd(), outputFile);
 
       // Always get largest files
       console.log(`${this.YELLOW}Getting largest files...${this.RESET}`);
@@ -521,6 +535,9 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
         this.options.type
       );
 
+      // Write the content to the file
+      await fs.writeFile(absoluteOutputPath, result, "utf-8");
+
       // Always display largest files
       console.log(`\n${this.YELLOW}Largest files in directory:${this.RESET}`);
       console.log("=".repeat(80));
@@ -532,7 +549,7 @@ ${this.YELLOW}A tool to dump your codebase contents into a file${this.RESET}
       console.log("=".repeat(80));
 
       await this.showMessage(
-        `${this.GREEN}Success: Output has been written to '${outputFile}'${this.RESET}`
+        `${this.GREEN}Success: Output has been written to '${absoluteOutputPath}'${this.RESET}`
       );
     } catch (error) {
       await this.showMessage(
